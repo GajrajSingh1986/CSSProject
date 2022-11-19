@@ -1,0 +1,835 @@
+<div id="tab-locations" class="tab-pane fade in active">
+    <div class="location-group">
+        <div class="">
+            <input type="text" placeholder="Search" [(ngModel)]="locatiomVM.search" (ngModelChange)="SearchChange()"  style="width:-webkit-calc(100% - 61px) !important; width:-moz-calc(100% - 61px) !important;width: calc(100% - 61px) !important;" class="form-control select" />
+
+             <div class="rightside-btn1 spacer-bottom-10" style="margin-top: -31px;float:right;">
+              <a href="javascript:void(0)" class="btn btn-theme btn-sm pull-right" style="margin-right: 5px;" (click)="ClearLocation()">Clear</a>
+            </div>
+        </div>
+        <div style="margin-top:10px">
+            <div style="display:inline-block">Click on the <i class="fa fa-calculator"></i> icon on the location record to view the Bid, Margin & Cost calculators based on the ISSA cleaning times.</div>
+            <div class=" spacer-bottom-10" style="float:right;">
+                <button class="btn btn-secondary" (click)="createLocation()">+ New Location</button>
+            </div>
+        </div>
+      
+      <!--<div class="single-group" *ngFor="let location of locations| filter: search;let i = index">-->
+            <div class="single-group" *ngFor="let location of locations | filter: search;let i = index">
+              <div class="location-tab">
+                <div class="header-location">
+                  <div (click)="ClickParent(i,location.LocationId)" [ngClass]="location.showparent ? 'collapse-icon' : 'collapsed collapse-icon'"></div>
+                  <div class="location-title-group" style="width:93%!important">
+                    <div class="location-title">
+                      <input type="text" *ngIf="location.editMode" class="form-control invalid" [(ngModel)]="locatiomVM.eLocationName" style="width:573px;line-height: normal;padding:10px;">
+                      <div style="width:573px;line-height: normal;padding:12px;" *ngIf="!location.editMode">
+                        {{location.LocationName}}
+                        <!--<span *ngIf="!location.editMode">{{location.LocationName}}</span>-->
+                      </div>
+                    </div>
+                    <div class="action-title">
+                      <span class="action-label-group">Total Area: <strong *ngIf='!locatiomVM.IsMetric'>{{location.SquareFeet| number : '1.2-2'}}</strong> <strong *ngIf='locatiomVM.IsMetric'>{{location.SquareMeter| number : '1.2-2'}}</strong> </span>
+                      <span class="action-label-group">Total Minutes: <strong>{{location.totalMinuts | number : '1.2-2'}}</strong></span>
+                      &nbsp;
+                      <ng-container *ngIf='!location.CalcuBuildIcon'>
+                        <span><a href="#" data-toggle="modal" (click)="ShowCalculation(location)"><i class="fa fa-calculator"></i></a></span>
+                      </ng-container>
+                      <ng-container *ngIf='location.CalcuBuildIcon'>&nbsp;<span><a href="#" data-toggle="modal" (click)="BuildingCalculation(location)"><i class="fa fa-calculator"></i></a></span></ng-container>
+                      &nbsp;
+                      <select style="height:27px" [disabled]="!location.editMode" [(ngModel)]="location.EmployeeName">
+                        <option [ngValue]="null">Select employee</option>
+                        <option *ngFor="let emp of locations[i].Assign_employee" [value]="emp.EmployeeName">
+                          {{emp.EmployeeName}}
+                        </option>
+                      </select>
+                      &nbsp;
+                      <input type="checkbox" [(ngModel)]="location.isSelected" name="location_name" value="m1" (change)="checkUncheckAll(i,location.LocationId)" />&nbsp;
+                    </div>
+                  </div>
+
+                  <div class="location-actions" style="width:175px!important">
+                    <a *ngIf="!location.editMode" (click)="editLoction(location.LocationId)" href="javascript:void(0)" class="fa fa-edit" style="width:20%!important"></a>
+                    <a *ngIf="location.editMode" (click)="updateLocation(location)" href="javascript:void(0)" class="fa fa-check" style="width:20%!important"></a>
+                    <a *ngIf="location.editMode" (click)="CancelLocation(i)" href="javascript:void(0)" class="fa fa-close" style="width:20%!important"></a>
+                    <a *ngIf="!location.editMode" href="javascript:void(0)" class="fa fa-copy" (click)="createCopyOfLocation(location)" style="width:20%!important"></a>
+                    <a *ngIf="!location.editMode && locations.length>1" href="javascript:void(0)" class="fa fa-trash" (click)="deleteLocation(location.LocationId);" style="width:20%!important"></a>
+                    <a *ngIf="i !=0" href="javascript:void(0)" class="fa fa-arrow-up" style="width:20%;" (click)="UpdateLocationOrderUp(i,locations)"></a>
+                    <a *ngIf="locations.length != (i+1)" href="javascript:void(0)" style="width:20%;" class="fa fa-arrow-down" (click)="UpdateLocationOrderDown(i,locations)"></a>
+
+                  </div>
+                </div>
+                <div id="{{location.LocationId}}_location" class="body-location" *ngIf="location.showparent">
+                  <div class="work-area">
+                    Search &nbsp;<input type="text" placeholder="Search" [(ngModel)]="searchbuilding" (ngModelChange)="SearchBuilding()" style="display:inline;width:350px!important;margin-bottom: 6px;" class="form-control select" />
+                    
+                    Select Market Segment<select class="form-control select" id="sigmentId" style="display:inline;width:250px!important;margin-bottom: 6px;" [disabled]="!location.editMode"
+                                                 [(ngModel)]="location.MarketSegment">
+                      <option [ngValue]="null">-- Select Market Segment --</option>
+                      <option *ngFor="let obj of marketSegments" [value]="obj">
+                        {{obj}}
+                      </option>
+                    </select>
+
+                    <div class="single-group" *ngFor="let building of locations[i].buildings| filter: searchbuilding; let b = index">
+                      <div class="location-tab">
+                        <div class="header-location">
+                          <div (click)="Clickbuilding(i,b,building.BuildingId)" [ngClass]="building.showbuild ? 'collapse-icon' : 'collapsed collapse-icon'"></div>
+                          <div class="location-title-group" style="width:93%!important">
+                            <div class="location-title">
+                              <input type="text" *ngIf="building.editMode" class="form-control invalid" [(ngModel)]="locatiomVM.eBuildingName" style="width:370px;line-height: normal;padding:10px;">
+                              <div style="width:400px;line-height: normal;padding:12px;" *ngIf="!building.editMode">
+                                {{building.BuildingName}}
+                              </div>
+                            </div>
+                            <div class="action-title">
+                              <span class="action-label-group">Total Area: <strong *ngIf='!locatiomVM.IsMetric'>{{building.SquareFeet| number : '1.2-2'}}</strong> <strong *ngIf='locatiomVM.IsMetric'>{{building.SquareMeter| number : '1.2-2'}}</strong> </span>
+                              <span class="action-label-group">Total Minutes: <strong>{{building.totalMinuts| number : '1.2-2'}}</strong></span>
+                              <button class="btn btn-secondary add-new-btn" (click)="createNewBuilding(i)"> + New Building</button>&nbsp;&nbsp;&nbsp;
+                              <span><a href="#" data-toggle="modal" (click)="BuildingReport(building)"><i class="fa fa-building"></i></a></span>
+                              &nbsp;&nbsp;<!--*ngIf="locatiomVM.JobcarbSetting"-->
+                              <span>
+                                <a href="#" data-toggle="modal" (click)="Recalculate(location.LocationId,building.BuildingId,i)">
+                                  <img src="~/../assets/images/refreshimg.png" style="top:20%;left:20%;width:18px;" />
+                                </a>
+                              </span>&nbsp;&nbsp;
+                              <select style="height:27px" [disabled]="!building.editMode" [(ngModel)]="building.EmployeeName">
+                                <option [ngValue]="null">Select employee</option>
+                                <option *ngFor="let emp of locations[i].buildings[b].Assign_employee" [value]="emp.EmployeeName">
+                                  {{emp.EmployeeName}}
+                                </option>
+                              </select>
+                              &nbsp;<input type="checkbox" name="list_name" [(ngModel)]="building.isbuldSelected" value="{{building.isSelected}}" (change)="isAllSelected(i)" />
+                            </div>
+                          </div>
+                          <div class="location-actions" style="width:175px!important">
+                            <a *ngIf="!building.editMode" (click)="editBuilding(location.LocationId,building.BuildingId)" href="javascript:void(0)" class="fa fa-edit" style="width:20%!important"></a>
+                            <a *ngIf="building.editMode" (click)="updateBuilding(building)" href="javascript:void(0)" class="fa fa-check" style="width:20%!important"></a>
+                            <a *ngIf="building.editMode" (click)="CancelBuilding(i,b)" href="javascript:void(0)" class="fa fa-close" style="width:20%!important"></a>
+                            <a *ngIf="!building.editMode" href="javascript:void(0)" class="fa fa-copy" (click)="createCopyOfBuilding(building,i)" style="width:20%!important"></a>
+                            <a *ngIf="!building.editMode" href="javascript:void(0)" class="fa fa-trash" (click)="deletebuilding(i,building);" style="width:20%!important"></a>
+
+                            <a *ngIf="b !=0" href="javascript:void(0)" class="fa fa-arrow-up" style="width:20%;" (click)="UpdateBuildingOrderUp(b,locations[i].buildings)"></a>
+                            <a *ngIf="locations[i].buildings.length != (b+1)" href="javascript:void(0)" style="width:20%;" class="fa fa-arrow-down" (click)="UpdateBuildingOrderDown(b,locations[i].buildings)"></a>
+
+                          </div>
+                        </div>
+                        <div id="{{building.BuildingId}}_building" class="body-location" *ngIf="building.showbuild">
+                          <div class="work-area">
+
+                            Search &nbsp;<input type="text" placeholder="Search" [(ngModel)]="SearchFloor" style="display:inline;width:350px!important;margin-bottom: 6px;" class="form-control select" />
+                            
+                            <div class="single-group" *ngFor="let floor of locations[i].buildings[b].floors| filter: SearchFloor;let f = index">
+                              <div class="location-tab">
+                                <div class="header-location">
+                                  <div (click)="Clickfloor(i,b,f,floor.FloorId)" [ngClass]="location.showfloor ? 'collapse-icon' : 'collapsed collapse-icon'" data-toggle="collapse"></div>
+                                  <div class="location-title-group" style="width:93%!important">
+                                    <div class="location-title">
+                                      <input type="text" *ngIf="floor.editMode" class="form-control invalid" [(ngModel)]="locatiomVM.eFloorName" style="width:340px;line-height: normal;padding:10px;">
+                                      <div style="width:375px;line-height: normal;padding:12px;" *ngIf="!floor.editMode">
+                                        {{floor.FloorName}}
+                                        <!--<span *ngIf="!floor.editMode">{{floor.FloorName}}</span>-->
+                                      </div>
+                                    </div>
+
+                                    <div class="action-title">
+                                      <span class="action-label-group">Total Area: <strong *ngIf='!locatiomVM.IsMetric'>{{floor.SquareFeet| number : '1.2-2'}}</strong> <strong *ngIf='locatiomVM.IsMetric'>{{floor.SquareMeter| number : '1.2-2'}}</strong></span>
+                                      <span class="action-label-group">Total Minutes: <strong>{{floor.totalMinuts| number : '1.2-2'}}</strong></span>
+                                      <button class="btn btn-secondary add-new-btn" (click)="createNewFloor(i,b)">+ New Floor</button>&nbsp;
+                                      &nbsp;
+                                      <span>
+                                        <a href="#" data-toggle="modal" (click)="Recalculatebyfloor(building.BuildingId,floor.FloorId,i,b,f)">
+                                          <img src="~/../assets/images/refreshimg.png" style="top:20%;left:20%;width:18px;" />
+                                        </a>
+                                      </span>&nbsp;&nbsp;
+
+                                      <select style="height:27px" [disabled]="!floor.editMode" [(ngModel)]="floor.EmployeeName">
+                                        <option [ngValue]="null">Select employee</option>
+                                        <option *ngFor="let emp of locations[i].buildings[b].floors[f].Assign_employee" [value]="emp.EmployeeName">
+                                          {{emp.EmployeeName}}
+                                        </option>
+                                      </select>
+                                    </div>
+                                  </div>
+                                  <div class="location-actions" style="width:175px!important">
+                                    <a *ngIf="!floor.editMode" (click)="editFloor(i,b,f)" href="javascript:void(0)" class="fa fa-edit" style="width:20%!important"></a>
+                                    <a *ngIf="floor.editMode" (click)="updateFloor(floor)" href="javascript:void(0)" class="fa fa-check" style="width:20%!important"></a>
+                                    <a *ngIf="floor.editMode" (click)="CancelFloor(i,b,f)" href="javascript:void(0)" class="fa fa-close" style="width:20%!important"></a>
+                                    <a *ngIf="!floor.editMode" href="javascript:void(0)" class="fa fa-copy" (click)="createCopyOfFloor(floor,i,b)" style="width:20%!important"></a>
+                                    <a *ngIf="!floor.editMode" href="javascript:void(0)" class="fa fa-trash" (click)="deletefloor(i,b,f,floor);" style="width:20%!important"></a>
+
+                                    <a *ngIf="f !=0" href="javascript:void(0)" class="fa fa-arrow-up" style="width:20%;" (click)="UpdateFloorOrderUp(f,locations[i].buildings[b].floors)"></a>
+                                    <a *ngIf="locations[i].buildings[b].floors.length != (f+1)" href="javascript:void(0)" style="width:20%;" class="fa fa-arrow-down" (click)="UpdateFloorOrderDown(f,locations[i].buildings[b].floors)"></a>
+                                  </div>
+                                </div>
+                                <div id="{{floor.FloorId}}_floor" *ngIf="floor.showfloor">
+                                  <div class="work-area">
+                                    Search &nbsp;<input type="text" placeholder="Search" [(ngModel)]="locatiomVM.searchfloor" (ngModelChange)="SearchFloor(i.b)" style="display:inline;width:350px!important;margin-bottom: 6px;" class="form-control select" />
+                                    <div class="single-group" *ngFor="let room of locations[i].buildings[b].floors[f].rooms;let r = index">
+                                      <div class="location-tab">
+                                        <div class="header-location">
+                                          <div (click)="Clickroom(i,b,f,r,room.RoomId)" [ngClass]="location.showroom ? 'collapse-icon' : 'collapsed collapse-icon'"></div>
+                                          <div class="location-title-group" style="width:93%!important">
+                                            <div class="location-title">
+                                              <input type="text" *ngIf="room.editMode" class="form-control invalid" [(ngModel)]="locatiomVM.eRoomName" style="width:350px;line-height: normal;padding:10px;">
+                                              <div style="width:500px;line-height: normal;padding:12px;" *ngIf="!room.editMode">
+                                                {{room.RoomName}}
+                                                <!--<span *ngIf="!room.editMode">{{room.RoomName}}</span>-->
+                                              </div>
+                                            </div>
+                                            <div class="action-title">
+                                              <span class="action-label-group">Total Area: <strong *ngIf='!locatiomVM.IsMetric'>{{room.SquareFeet| number : '1.2-2'}}</strong> <strong *ngIf='locatiomVM.IsMetric'>{{room.SquareMeter| number : '1.2-2'}}</strong> </span>
+                                              <span class="action-label-group">Total Minutes: <strong>{{room.Total_Minuts| number : '1.2-2'}}</strong></span>
+                                              <button class="btn btn-secondary add-new-btn" (click)="createNewroom(i,b,f)">+ New Room</button>&nbsp;
+                                              <span>
+                                                <a href="#" data-toggle="modal" (click)="Recalculatebyroom(building.BuildingId,floor.FloorId,room.RoomId,i,b,f)">
+                                                  <img src="~/../assets/images/refreshimg.png" style="top:20%;left:20%;width:18px;" />
+                                                </a>
+                                              </span>&nbsp;&nbsp;
+                                            </div>
+                                          </div>
+                                          <div class="location-actions" style="width:175px!important">
+                                            <a *ngIf="!room.editMode" (click)="editRoom(i,b,f,r)" href="javascript:void(0)" class="fa fa-edit" style="width:20%!important"></a>
+                                            <a *ngIf="room.editMode" (click)="updateRoom(room)" href="javascript:void(0)" class="fa fa-check" style="width:20%!important"></a>
+                                            <a *ngIf="room.editMode" (click)="Cancelroom(i,b,f,r,room.RoomId)" href="javascript:void(0)" class="fa fa-close" style="width:20%!important"></a>
+                                            <a *ngIf="!room.editMode" href="javascript:void(0)" class="fa fa-copy" (click)="createCopyOfRoom(i,b,f,room)" style="width:20%!important"></a>
+                                            <a *ngIf="!room.editMode" href="javascript:void(0)" class="fa fa-trash" (click)="deleteroom(i,b,f,r,room);" style="width:20%!important"></a>
+                                            <!--*ngIf="buildingreport_model.records[fl].rooms[rm].roomschedule_response.length != (SInx+1)"-->
+                                            <a *ngIf="r !=0" href="javascript:void(0)" class="fa fa-arrow-up" style="width:20%;" (click)="UpdateRoomOrderUp(r,locations[i].buildings[b].floors[f].rooms)"></a>
+                                            <a *ngIf="locations[i].buildings[b].floors[f].rooms.length != (r+1)" href="javascript:void(0)" style="width:20%;" class="fa fa-arrow-down" (click)="UpdateRoomOrderDown(r,locations[i].buildings[b].floors[f].rooms)"></a>
+
+                                          </div>
+                                        </div>
+                                        <div id="{{room.RoomId}}_room" *ngIf="room.showroom">
+                                          <div class="work-area no-padding">
+                                            <div class="floor-work-area">
+                                              <div class="left-side">
+                                                <div class="form-input-theme" style="width:220px;">
+                                                  <select id="AreaTemplateId" style="height:29px;width: 200px;"
+                                                          [(ngModel)]="room.AreaTemplateId" #mytemplate (change)='frequecySelected(i,b,f,r,mytemplate.value)'>
+                                                    <option [ngValue]="Undefined">-- Select Template --</option>
+                                                    <option *ngFor="let obj of  locations[i].buildings[b].floors[f].rooms[r].Areatemplatemodel" [value]="obj.AreaTemplateId">
+                                                      {{obj.Title}}
+                                                    </option>
+                                                  </select>
+                                                </div>
+
+                                                <div class="form-input-theme" style="width:200px;">
+                                                  <select id="FloorTypeId" style="height:29px;width: 200px;"
+                                                          [(ngModel)]="room.FloorTypeId">
+                                                    <option [ngValue]="Undefined">-- Select Floor Type --</option>
+                                                    <option *ngFor="let obj of locations[i].buildings[b].floors[f].rooms[r].Floortypemodel" [value]="obj.FloorTypeId">
+                                                      {{obj.Title}}
+                                                    </option>
+                                                  </select>
+                                                </div>
+
+                                                <div class="form-input-theme">
+                                                  <div class="label-form"> &nbsp; {{sqlmeter}} :&nbsp;</div>
+                                                  <ng-container *ngIf='!locatiomVM.IsMetric'><input type="number" class="form-control" [(ngModel)]="room.SquareFeet" min="0"></ng-container>
+                                                  <ng-container *ngIf='locatiomVM.IsMetric'>  <input type="number" class="form-control" [(ngModel)]="room.SquareMeter" min="0"> </ng-container>
+                                                </div>
+                                                <div class="form-input-theme">
+                                                  <div class="label-form">Color:</div>
+                                                  <select id="color" name="color" style="height:29px;" [(ngModel)]="room.Colors">
+                                                    <option [ngValue]="null" class="">Select Color</option>
+                                                    <option value="Red">Red</option>
+                                                    <option value="White">White</option>
+                                                    <option value="Green">Green</option>
+                                                    <option value="Pink">Pink</option>
+                                                    <option value="Yellow">Yellow</option>
+                                                    <option value="darkgreen">darkgreen</option>
+                                                    <option value="cyan">cyan</option>
+                                                    <option value="darkblue">darkblue</option>
+                                                    <option value="Blue">Blue</option>
+                                                    <option value="Black">Black</option>
+                                                  </select>
+                                                </div>
+                                                <div class="form-input-theme">
+                                                  <div class="label-form">Assign Employee:</div>
+                                                  <select [(ngModel)]="room.EmployeeName" style="height:29px;" #taskemployee (change)='TaskEmployee(i,b,f,r,taskemployee.value)'>
+                                                    <option [ngValue]="null">--Select employee --</option>
+                                                    <option *ngFor="let emp of locations[i].buildings[b].floors[f].rooms[r].Assign_employee" [value]="emp.EmployeeName">
+                                                      {{emp.EmployeeName}}
+                                                    </option>
+                                                  </select>
+                                                </div>
+                                                <br><br>
+                                              </div>
+                                              <div class=" spacer-top-20 spacer-bottom-20" *ngIf="room.showroom">
+                                                <table class="table table-theme">
+                                                  <thead>
+                                                    <tr>
+                                                      <th>Assign</th>
+                                                      <th>Activity</th>
+                                                      <th>Priority</th>
+                                                      <th>Cleaning Frequency</th>
+                                                      <th>Quantity</th>
+                                                      <th>Frequency Type</th>
+                                                      <th>Frequency Day</th>
+                                                      <th *ngIf="room.editMode">Action</th>
+                                                    </tr>
+                                                  </thead>
+                                                  <tbody *ngIf="!room.editMode">
+                                                    <ng-template [ngIf]="locations[i].buildings[b].floors[f].rooms[r].roomschedule_response?.length >0">
+                                                      <tr *ngFor="let afixture of locations[i].buildings[b].floors[f].rooms[r].roomschedule_response;let area =index;">
+                                                        <td>{{afixture.EmployeeName}}</td>
+                                                        <td>{{afixture.Title}}</td>
+                                                        <td><input type="checkbox" [(ngModel)]="afixture.Priority" disabled="disabled" /></td>
+                                                        <td>{{afixture.CleaningFrequecy}}</td>
+                                                        <td>{{afixture.Quantity}}</td>
+                                                        <td>
+                                                          <ng-container *ngIf="afixture.FrequecyType===3"><a>Daily</a></ng-container> <ng-container *ngIf="afixture.FrequecyType===1"><a>Weekly</a></ng-container><ng-container *ngIf="afixture.FrequecyType===2"><a>Monthly</a></ng-container>
+                                                          <ng-container *ngIf="afixture.FrequecyType===4"><a>BiMonthly</a></ng-container><ng-container *ngIf="afixture.FrequecyType===5"><a>Quarterly</a></ng-container><ng-container *ngIf="afixture.FrequecyType===6"><a>Annually</a></ng-container><ng-container *ngIf="afixture.FrequecyType===7"><a>Ondemand</a></ng-container>
+                                                        </td>
+                                                          <!-- <td>{{afixture.CalculatetotalMinuts | number : '1.2-2'}}</td> -->
+                                                        <td>
+                                                          <input type="checkbox" [(ngModel)]="afixture.Sunday" disabled="disabled" />Sun&nbsp;
+                                                          <input type="checkbox" [(ngModel)]="afixture.Monday" disabled="disabled" />Mon&nbsp;<input type="checkbox" [(ngModel)]="afixture.Tuesday" disabled="disabled" />Tue&nbsp;<input type="checkbox" [(ngModel)]="afixture.Wednesday" disabled="disabled" />Wed&nbsp;<input type="checkbox" [(ngModel)]="afixture.Thursday" disabled="disabled" />Thu&nbsp;<input type="checkbox" [(ngModel)]="afixture.Friday" disabled="disabled" />Fri&nbsp;<input type="checkbox" [(ngModel)]="afixture.Saturday" disabled="disabled" />Sat&nbsp;
+                                                        </td>
+                                                      </tr>
+                                                    </ng-template>
+                                                  </tbody>
+                                                  <tbody *ngIf="room.editMode">
+                                                    <ng-template [ngIf]="locations[i].buildings[b].floors[f].rooms[r].roomschedule_response?.length >0">
+                                                      <tr *ngFor="let afixture of locations[i].buildings[b].floors[f].rooms[r].roomschedule_response;let m =index">
+                                                        <td>
+                                                          <select [(ngModel)]="afixture.EmployeeName" style="height:29px;">
+                                                            <option [ngValue]="null">--Select employee --</option>
+                                                            <option *ngFor="let emp of locations[i].buildings[b].floors[f].rooms[r].Assign_employee" [value]="emp.EmployeeName">
+                                                              {{emp.EmployeeName}}
+                                                            </option>
+                                                          </select>
+                                                        </td>
+
+                                                        <td>{{afixture.Title}}</td>
+                                                        <td><input type="checkbox" [(ngModel)]="afixture.Priority" /></td>
+                                                        <td>
+                                                          <input class="form-control" type="text" [(ngModel)]="afixture.CleaningFrequecy" name="EditSpace" width="30" />
+                                                        </td>
+                                                        <td>
+                                                          <input class="form-control" type="text" [(ngModel)]="afixture.Quantity" name="EditSpace" width="20" />
+                                                        </td>
+                                                        <td>
+                                                          <div class="form-group form-group-theme" style="width:130px;">
+                                                            <select class="form-control select" [(ngModel)]="afixture.FrequecyType" #Frequecytype (change)='SelectFrequency(i,b,f,r,Frequecytype.value,afixture.FixtureId)'>
+                                                              <option [ngValue]="Undefined">-- Frequency Type --</option>
+                                                              <option *ngFor="let type of FrequencyTypes_lst" [value]="type.FrequencyTypeId">
+                                                                {{type.Title}}
+                                                              </option>
+                                                            </select>
+                                                          </div>
+                                                        </td>
+
+                                                                                                    <!-- <td>{{afixture.CalculatetotalMinuts | number : '1.2-2'}}</td> -->
+                                                        <td style="width:450px;">
+                                                          <div class="col-sm-14"><input type="checkbox" [(ngModel)]="afixture.Sunday" style="height:15px;width:22px;">Sun &nbsp;&nbsp;<input type="checkbox" [(ngModel)]="afixture.Monday" style="height:15px;width:22px;">Mon &nbsp;&nbsp;<input type="checkbox" [(ngModel)]="afixture.Tuesday" style="height:15px;width:22px;">Tue &nbsp;&nbsp;<input type="checkbox" [(ngModel)]="afixture.Wednesday" style="height:15px;width:22px;">Wed &nbsp;&nbsp;<input type="checkbox" [(ngModel)]="afixture.Thursday" style="height:15px;width:22px;">Thu &nbsp;&nbsp;<input type="checkbox" [(ngModel)]="afixture.Friday" style="height:15px;width:22px;">Fri &nbsp;&nbsp;<input type="checkbox" [(ngModel)]="afixture.Saturday" style="height:14px;width:18px;">Sat</div>
+                                                        </td>
+                                                        <td><a href="javascript:void(0)" class="fa fa-close" (click)="RemoveFixture(i,b,f,r,m)"></a></td>
+                                                      </tr>
+                                                    </ng-template>
+                                                  </tbody>
+                                                </table>
+                                              </div>
+
+                                              <div class="location-action">
+                                                <a href="javascript:void(0)" (click)="Saverecord(i,b,f,r,room)" class="btn btn-theme btn-md">Save</a>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+         <!-- <div class="action-title-new">
+        <span class="action-label-group">Total Locations: <strong ng-bind="locations.length"></strong></span>
+        <span class="action-label-group">Total Area: <strong ng-bind="totalSquartFeet"></strong></span>
+        <span class="action-label-group">Total Minutes: <strong ng-bind="totalTime | number:2"></strong></span>
+       </div> -->
+              <!-- <calculator-modal calculator-data="selectedLocation" show-calculator-modal="showCalculatorModal"></calculator-modal> -->
+              <!-- Show Calculator Modal -->
+              <div id="Showbidcaculator" class="modal fade in modal-theme" role="dialog" data-backdrop="false" *ngIf="model_showbidcalculator">
+                <div class="modal-dialog" style="width:800px;">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <div class="close-dismiss" data-dismiss="modal"></div>
+                      <h4 class="modal-title">CALCULATOR</h4>
+                    </div>
+
+                    <form id="showbidcalculatorform" #showbidcalculatorform="ngForm">
+                      <div class="modal-body">
+                        <div style="margin-bottom:10px">
+                          <div class="template-group">
+                            Location: <b><label>{{Locationname}}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label></b>
+                            <ng-container *ngIf="locatiomVM.IsMetric">Square Meter:<b><label>{{SqrMtrtotal}}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label></b></ng-container> <ng-container *ngIf="!locatiomVM.IsMetric">Area: <b><label>{{Areatotal}}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label></b></ng-container>
+                            <ng-container *ngIf="locatiomVM.buildingshow">
+                              Name : <input type="text" style="width:250px" placeholder="Enter Calculator Name"
+                                            id="CalculationName" name="CalculationName"
+                                            #CalculationName="ngModel"
+                                            [(ngModel)]="model_showbidcalculator.CalculationName" />
+                            </ng-container>
+                          </div>
+
+                        </div>
+                        <div class="col-xs-11 col-sm-11 col-md-11 col-lg-6">
+                          <div class="single-form-popup">
+                            <ng-container *ngIf="locatiomVM.IsMetric">
+                              <div class="label-form" title="Imported from the cleaning template">Total Sq. Mtr:</div>
+                              <input type="text"
+                                     class="form-control" id="SquareMeter" name="SquareMeter"
+                                     #SquareMeter="ngModel"
+                                     [(ngModel)]="model_showbidcalculator.SquareMeter" readonly="readonly" />
+                            </ng-container>
+                            <!--*ngIf="model_showbidcalculator.SquareMeter>0"-->
+                            <ng-container *ngIf="!locatiomVM.IsMetric">
+                              <div class="label-form" title="Imported from the cleaning template">Total Sq. Ft:</div>
+                              <input type="text"
+                                     class="form-control" id="SquareFeet" name="SquareFeet"
+                                     #SquareFeet="ngModel"
+                                     [(ngModel)]="model_showbidcalculator.SquareFeet" readonly="readonly" />
+                            </ng-container>
+                          </div>
+                          <div class="single-form-popup">
+                            <div class="label-form" title="Total Hours it will take to clean the facility per day">Total monthly labor (Hours):</div>
+
+                            <input type="text"
+                                   class="form-control" id="TotalLaborHours" name="TotalLaborHours"
+                                   #TotalLaborHours="ngModel"
+                                   [ngModel]="model_showbidcalculator.TotalLaborHours | number:'.2-2'"
+                                   (ngModelChange)="model_showbidcalculator.TotalLaborHours=$event"
+                                   readonly="readonly" />
+                          </div>
+
+                          <div class="single-form-popup">
+                            <div class="label-form" title="Total Supply costs per month">Hourly labor rate ($):</div>
+                            <input type="number"
+                                   class="form-control" id="HourlyLaborRate" name="HourlyLaborRate"
+                                   #HourlyLaborRate="ngModel"
+                                   [(ngModel)]="model_showbidcalculator.HourlyLaborRate"
+                                   (keyup)="OnBidCalculatorChange(showbidcalculatorform.invalid)"
+                                   (change)="OnBidCalculatorChange(showbidcalculatorform.invalid)"
+                                   [class.required]="(HourlyLaborRate.touched && HourlyLaborRate.invalid)"
+                                   required min="0" />
+
+                          </div>
+                          <div class="single-form-popup">
+                            <div class="label-form" title="Total Supply costs per month">Weekly employee (Hours): </div>
+                            <input type="number"
+                                   class="form-control" id="WeeklyHours" name="WeeklyHours"
+                                   #WeeklyHours="ngModel"
+                                   [(ngModel)]="model_showbidcalculator.WeeklyHours" pattern="^[1-9][0-9]*$"
+                                   (keyup)="OnBidCalculatorChange(showbidcalculatorform.invalid)"
+                                   (change)="OnBidCalculatorChange(showbidcalculatorform.invalid)"
+                                   min="0" required
+                                   [class.required]="(WeeklyHours.touched && WeeklyHours.invalid)" />
+
+                          </div>
+
+                          <div class="single-form-popup">
+                            <div class="label-form" title="Total Supply costs per month">Supply rate (%):</div>
+
+                            <input type="number"
+                                   class="form-control" id="SupplyRate" name="SupplyRate"
+                                   #SupplyRate="ngModel" [(ngModel)]="model_showbidcalculator.SupplyRate"
+                                   (keyup)="OnBidCalculatorChange(showbidcalculatorform.invalid)"
+                                   (change)="OnBidCalculatorChange(showbidcalculatorform.invalid)"
+                                   pattern="^[1-9][0-9]*$" min="0" required
+                                   [class.required]="(SupplyRate.touched && SupplyRate.invalid)" />
+
+                          </div>
+
+                          <div class="single-form-popup">
+                            <div class="label-form" title="Total Supply costs per month">Overhead rate (%):</div>
+
+                            <input type="number"
+                                   class="form-control" id="OverHeadRate" name="OverHeadRate"
+                                   #OverHeadRate="ngModel" [(ngModel)]="model_showbidcalculator.OverHeadRate"
+                                   [class.required]="(OverHeadRate.touched && OverHeadRate.invalid)"
+                                   (keyup)="OnBidCalculatorChange(showbidcalculatorform.invalid)"
+                                   (change)="OnBidCalculatorChange(showbidcalculatorform.invalid)"
+                                   pattern="^[1-9][0-9]*$" min="0" required />
+
+                          </div>
+
+                          <div class="single-form-popup">
+                            <div class="label-form" title="Monthly Gross Margin as a % of the suggested bid amount">Gross margin (%):</div>
+                            <input type="number"
+                                   class="form-control" id="GrossMargin" name="GrossMargin"
+                                   #GrossMargin="ngModel" [(ngModel)]="model_showbidcalculator.GrossMargin"
+                                   [class.required]="(GrossMargin.touched && GrossMargin.invalid)" pattern="^[0-9][0-9]*$"
+                                   (keyup)="OnBidCalculatorChange(showbidcalculatorform.invalid)"
+                                   (change)="OnBidCalculatorChange(showbidcalculatorform.invalid)"
+                                   required />
+                          </div>
+                          <br /><br />
+                          <div class="single-form-popup">
+                            <ng-container *ngIf="locatiomVM.buildingshow">
+                              <div class="label-form" style="overflow:auto; height:180px;width:310px;" *ngIf="calculationName_response.CalculationnameModel.length>0">
+                                <table style="border-collapse: collapse;width:300px;">
+                                  <tr>
+                                    <th style="border: 1px solid black;background-color: #0279af;color: white;text-align:center;" colspan="5">Existing Saved Calculator</th>
+                                  </tr>
+                                  <tr>
+                                    <th style="border: 1px solid black;">&nbsp;CalculatorName</th>
+                                    <th style="border: 1px solid black;text-align:center;">&nbsp;Area</th>
+                                    <th style="border: 1px solid black;text-align:center;">&nbsp;TotalTime (Hours)</th>
+                                    <th style="border: 1px solid black;text-align:center;">&nbsp;FTE</th>
+                                    <th style="border: 1px solid black;text-align:center;">&nbsp;Suggested Amount</th>
+                                  </tr>
+                                  <tr *ngFor="let build of calculationName_response.CalculationnameModel">
+                                    <td style="border: 1px solid black;text-align:left;">&nbsp;{{build.CaculatorName}}</td>
+                                    <td style="border: 1px solid black;text-align:center;">&nbsp;{{build.Area}}</td>
+                                    <td style="border: 1px solid black;text-align:center;">&nbsp;{{build.Totaltime| number : '1.2-2'}}</td>
+                                    <td style="border: 1px solid black;text-align:center;">&nbsp;{{build.FTE}}</td>
+                                    <td style="border: 1px solid black;text-align:center;">&nbsp;{{build.SuggestedAmount| number : '1.2-2'}}</td>
+                                  </tr>
+                                </table>
+                              </div>
+                            </ng-container>
+                          </div>
+                        </div>
+
+                        <div class="col-xs-11 col-sm-11 col-md-11 col-lg-6">
+                          <div class="single-form-popup">
+                            <div class="label-form"
+                                 title="Total Hours it will take to clean the facility per week based on how many X per week you selected">Total weekly labor (Hours):</div>
+                            <input type="text"
+                                   class="form-control" id="TotalWeeklyLabor" name="TotalWeeklyLabor"
+                                   [ngModel]="model_showbidcalculator.TotalWeeklyLabor | number:'.2-2'"
+                                   (ngModelChange)="model_showbidcalculator.TotalWeeklyLabor=$event"
+                                   readonly="readonly" readonly="readonly" />
+                          </div>
+
+                          <div class="single-form-popup">
+                            <div class="label-form" title="Total Labor costs per month">Monthly labor cost ($):</div>
+                            <input type="text"
+                                   class="form-control" id="MonthlyLaborCost" name="MonthlyLaborCost"
+                                   [ngModel]="model_showbidcalculator.MonthlyLaborCost | number:'.2-2'"
+                                   (ngModelChange)="model_showbidcalculator.MonthlyLaborCost=$event"
+                                   readonly="readonly" readonly="readonly" />
+                          </div>
+
+                          <div class="single-form-popup">
+                            <div class="label-form" title="Total Supply costs per month">Monthly supply cost ($):</div>
+                            <input type="text"
+                                   class="form-control" id="MonthlySupplyCost" name="MonthlySupplyCost"
+                                   [ngModel]="model_showbidcalculator.MonthlySupplyCost | number:'.2-2'"
+                                   (ngModelChange)="model_showbidcalculator.MonthlySupplyCost=$event"
+                                   readonly="readonly" readonly="readonly" />
+
+                          </div>
+                          <div class="single-form-popup">
+                            <div class="label-form" title="Total Overhead costs per month">Monthly overhead cost ($):</div>
+                            <input type="text"
+                                   class="form-control" id="MonthlyOverHeadCost" name="MonthlyOverHeadCost"
+                                   [ngModel]="model_showbidcalculator.MonthlyOverHeadCost | number:'.2-2'"
+                                   (ngModelChange)="model_showbidcalculator.MonthlyOverHeadCost=$event"
+                                   readonly="readonly" readonly="readonly" />
+
+                          </div>
+                          <div class="single-form-popup">
+                            <div class="label-form" title="Total Expenditures per month combining Labor, Supplies, and Overhead">Monthly total cost ($):</div>
+                            <input type="text"
+                                   class="form-control" id="MonthlyTotalCost" name="MonthlyTotalCost"
+                                   [ngModel]="model_showbidcalculator.MonthlyTotalCost | number:'.2-2'"
+                                   (ngModelChange)="model_showbidcalculator.MonthlyTotalCost=$event"
+                                   readonly="readonly" />
+                          </div>
+
+                          <div class="single-form-popup">
+                            <div class="label-form" title="Profit based on suggested bid amount minus costs">Monthly gross margin ($):</div>
+                            <input type="text"
+                                   class="form-control" id="MonthlyGrossMargin" name="MonthlyGrossMargin"
+                                   #MonthlyGrossMargin="ngModel"
+                                   [ngModel]="model_showbidcalculator.MonthlyGrossMargin | number:'.2-2'"
+                                   (ngModelChange)="model_showbidcalculator.MonthlyGrossMargin=$event"
+                                   readonly="readonly" />
+                          </div>
+
+                          <div class="single-form-popup">
+                            <div class="label-form highlight-lbl" title="How many full time employees will be needed to perform the cleaning operation based on activities and frequency"> FTE:</div>
+                            <input type="text"
+                                   class="form-control" id="FullTimeEmployees" name="FullTimeEmployees"
+                                   #FullTimeEmployees="ngModel" [(ngModel)]="model_showbidcalculator.FullTimeEmployees" readonly="readonly" />
+                          </div>
+                          <div class="single-form-popup">
+                            <div class="label-form highlight-lbl" style="left: -12px;">
+                              <span style="width: 182px;float: left;">Suggested bid amount ($):</span>
+                            </div>
+                            <input type="text"
+                                   class="form-control" id="Revenue" name="Revenue"
+                                   #Revenue="ngModel"
+                                   [ngModel]="model_showbidcalculator.Revenue | number:'.2-2'"
+                                   (ngModelChange)="model_showbidcalculator.Revenue=$event"
+                                   readonly="readonly" />
+                          </div>
+                        </div>
+                      </div>
+
+
+                      <div class="modal-footer">
+                        <ng-container *ngIf="!locatiomVM.buildingshow">
+                          <button type="button" class="btn btn-theme btn-sm" data-dismiss="modal"
+                                  [disabled]="showbidcalculatorform.invalid" (click)="SaveCalculation(model_showbidcalculator)">
+                            Save
+                          </button>
+                        </ng-container>
+                        <ng-container *ngIf="locatiomVM.buildingshow">
+
+                          <button type="button" class="btn btn-theme btn-sm" data-dismiss="modal"
+                                  [disabled]="!model_showbidcalculator.CalculationName" (click)="SaveBuildingCalculation(model_showbidcalculator)">
+                            Save
+                          </button>
+                        </ng-container>
+                        <button type="button" class="btn btn-theme btn-sm" data-dismiss="modal">Close</button>
+                      </div>
+                    </form>
+                    
+                  </div>
+                </div>
+              </div>
+
+            </div>
+      <!-- Building report -->
+  <div id="Showbuildingreport" class="modal fade in modal-theme" role="dialog" data-backdrop="false" *ngIf="model_showbidcalculator">
+        <div class="modal-dialog" style="width:1150px;">
+          <div class="modal-content">
+            <div class="modal-header">
+              <div class="close-dismiss" data-dismiss="modal"></div>
+              <h4 class="modal-title">Building Report</h4>
+            </div>
+          <!-- <form id="showbidcalculatorform" #showbidcalculatorform="ngForm"> -->
+            
+          <div class="modal-body">
+            <a class="btn btn-theme btn-sm pull-right" href="{{exportexcelurls(buildingreport_model.building.BuildingId)}}" target="_blank" style="margin-right: 5px;">
+              <i class="fa fa-file-excel-o"></i>&nbsp;&nbsp; Export To Excel
+            </a>
+              <!--<div style="position: absolute;right: 10px;top:5px;"><button type="button" class="btn btn-theme btn-sm" (click)="ExportToPDF();">Export to PDF</button> </div>&nbsp;&nbsp;&nbsp;&nbsp;-->
+                
+              <div style="margin-bottom:2px;width:1000px;" id="contentToConvert">
+                <div id="theme-blue">
+
+                  <div class="template-group">
+                    Building Name: <b><label>{{buildingreport_model.building.BuildingName}}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label></b>
+                    <ng-container *ngIf="locatiomVM.IsMetric">Square Meter:<b><label>{{buildingreport_model.building.SquareMeter}}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label></b></ng-container> <ng-container *ngIf="!locatiomVM.IsMetric">Area: <b><label>{{buildingreport_model.building.SquareFeet}}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label></b></ng-container>
+                  </div>
+
+                  <div style="margin-bottom:10px" *ngFor="let flor of buildingreport_model.records;let fl=index;">
+                    <div class="template-group">
+                      Floor:<b>{{flor.FloorName}}<label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label></b>
+
+                      <div style="margin-bottom:10px" *ngFor="let room of buildingreport_model.records[fl].rooms;let rm=index;">
+                        Room Name: <b><label>{{room.RoomName}}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label></b>
+                        
+                        <ng-container *ngIf="locatiomVM.IsMetric">Square Meter: <b><label>{{room.SquareMeter}}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label></b></ng-container> <ng-container *ngIf="!locatiomVM.IsMetric">Area:<b><label>{{room.RoomSquareFeet}}&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label></b></ng-container>
+                        Color: 
+                        <ng-container><a>{{room.Colors}}</a></ng-container>
+                            &nbsp;
+                           Assign : <b>
+                             <ng-container *ngIf="room.EmployeeName"><span id="spnname">{{room.EmployeeName}}</span></ng-container> 
+                              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                        </b>
+                        <div>
+                          <table class="table table-theme">
+                            <thead>
+                              <tr>
+                                <th>Employee</th>
+                                <th>Priority</th>
+                                <th>{{room.Title}}</th>
+                                <th>Frequency</th>
+                                <th>Quantity</th>
+                                <th>Minutes</th>
+                                <th>Sun</th>
+                                <th>Mon</th>
+                                <th>Tue</th>
+                                <th>Wed</th>
+                                <th>Thu</th>
+                                <th>Fri</th>
+                                <th>Sat</th>
+                                <th>Order</th>
+                              </tr>
+                            </thead>
+                          <tr *ngFor="let sch of buildingreport_model.records[fl].rooms[rm].roomschedule_response;let SInx=index;">
+                              <td><ng-container *ngIf="buildingreport_model.building.editMode===true">{{room.EmployeeName}}</ng-container> <ng-container *ngIf="buildingreport_model.building.editMode===false"><a>{{room.EmployeeName}}</a></ng-container> </td>
+                              <td style="text-align:center;">
+                                <!--<ng-container *ngIf="buildingreport_model.building.editMode===true"> <input id="Priority" width="50" height="50" [(ngModel)]="sch.Priority" type="checkbox" /></ng-container>-->
+                                <ng-container><a style="color:red;" *ngIf="sch.Priority===true">x</a></ng-container>
+                              </td>
+                              <td style="text-align:center;">{{sch.Title}}</td>
+                              <td style="text-align:center;">
+                                <ng-container *ngIf="sch.FrequecyType===3"><a>{{sch.CleaningFrequecy}} x Daily</a></ng-container>
+                                <ng-container *ngIf="sch.FrequecyType===1"><a>{{sch.CleaningFrequecy}} x Weekly</a></ng-container>
+                                <ng-container *ngIf="sch.FrequecyType===2"><a>{{sch.CleaningFrequecy}} x Monthly</a></ng-container>
+                                <ng-container *ngIf="sch.FrequecyType===4"><a>{{sch.CleaningFrequecy}} x BiMonthly</a></ng-container>
+                                <ng-container *ngIf="sch.FrequecyType===5"><a>{{sch.CleaningFrequecy}} x Quarterly</a></ng-container>
+                                <ng-container *ngIf="sch.FrequecyType===6"><a>{{sch.CleaningFrequecy}} x Annually</a></ng-container>
+                                <ng-container *ngIf="sch.FrequecyType===7"><a>{{sch.CleaningFrequecy}} x OnDemand</a></ng-container>
+                              </td>
+                             <td style="text-align:center;">{{sch.Quantity}}</td>
+                              <td style="text-align:center;">{{sch.TotalStepTime}}</td>
+                              <td style="text-align:center;"><ng-container *ngIf="sch.Sunday===true"><a>x</a></ng-container></td>
+                              <td style="text-align:center;"><ng-container *ngIf="sch.Monday===true"><a>x</a></ng-container></td>
+                              <td style="text-align:center;"><ng-container *ngIf="sch.Tuesday===true"><a>x</a></ng-container></td>
+                              <td style="text-align:center;"><ng-container *ngIf="sch.Wednesday===true"><a>x</a></ng-container></td>
+                              <td style="text-align:center;"><ng-container *ngIf="sch.Thursday===true"><a>x</a></ng-container></td>
+                              <td style="text-align:center;"><ng-container *ngIf="sch.Friday===true"><a>x</a></ng-container></td>
+                              <td style="text-align:center;"><ng-container *ngIf="sch.Saturday===true"><a>x</a></ng-container></td>
+                              <td style="text-align:center;" *ngIf="buildingreport_model.records[fl].rooms[rm].roomschedule_response.length>1">
+                                <a *ngIf="buildingreport_model.records[fl].rooms[rm].roomschedule_response.length != (SInx+1)" href="javascript:void(0)" class="fa fa-arrow-down" style="width:20%;"></a>
+                                &nbsp;&nbsp; <a *ngIf="SInx!=0" href="javascript:void(0)" class="fa fa-arrow-up" style="width:20%;"></a>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td colspan="13"><br></td>
+                            </tr>
+                            <tr>
+                              <td></td>
+                              <td></td>
+                              <td></td>
+                              <td style="text-align:center;">Room  Minutes</td>
+                              <td>{{room.RoomTotal_Minutes}}</td>
+                              <td></td>
+                              <td>Hours</td>
+                              <td style="text-align:center;">{{room.RoomTotal_Hours}}</td>
+                              <td></td>
+                              <td></td>
+                              <td></td>
+                              <td></td>
+                              <td>
+                                <br><br>
+                              </td>
+                            </tr>
+                            <!-- <tr>
+                            <td colspan="13"><br></td>
+                            </tr> -->
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                    <div style="text-align:center;">
+                      <br>
+                      <b>Floor Minutes<label>&nbsp;&nbsp;&nbsp;{{flor.Total_Minutes | number:'1.2-2'}}&nbsp;&nbsp;</label></b>
+                      <b>Hours<label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{flor.FloorTotal_Hours | number:'1.2-2'}}</label></b>
+                    </div>
+                  </div>
+
+                  <div style="text-align:center;"> 
+                    <b>Building Minutes<label>&nbsp;&nbsp;&nbsp;{{buildingreport_model.building.totalMinuts| number:'1.2-2'}}&nbsp;&nbsp;</label></b>
+                    <b>Hours<label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{buildingreport_model.building.Hours| number:'1.2-2'}}</label></b>
+                  </div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <!--<button type="button" class="btn btn-theme btn-sm" (click)="SaveReport(buildingreport_model);">Save</button>&nbsp;&nbsp;&nbsp;&nbsp;-->
+                <button type="button" class="btn btn-theme btn-sm" data-dismiss="modal">Close</button>
+              </div>
+              <!-- </form> -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+    <div id="ConfirmMSG" class="modal fade in modal-theme" role="dialog" data-backdrop="false" *ngIf="model_showbidcalculator">
+        <div class="modal-dialog" style="width:400px;">
+          <div class="modal-content">
+            <div class="modal-header">
+              <!--<div class="close-dismiss" data-dismiss="modal"></div>-->
+              <h4 class="modal-title"> </h4>
+            </div>
+
+            <div class="modal-body">
+              <div style="margin-bottom:2px;width:350px;">
+                <div id="theme-blue">
+                  <b *ngIf="!locatiomVM.showmsg">
+                    This will recalculate all the rooms in the building based on the latest inputs.This can take some time.
+                     Are you sure you want to refresh the calculations?
+                  </b>
+                  <b *ngIf="locatiomVM.showmsg">
+                    Please wait while we rebuild the new calculations.
+                    Please do not refresh or leave this screen.
+                  </b>
+               </div>
+              </div>
+              <br />
+              <div class="modal-footer" *ngIf="!locatiomVM.showmsg">
+                <button type="button" class="btn btn-theme btn-sm" style="width:55px;" (click)="ConfirmMSG()">Yes</button>&nbsp;&nbsp;
+                <button type="button" class="btn btn-theme  btn-sm" data-dismiss="modal" style="width:55px;">No</button>
+              </div>
+          </div> 
+         </div>
+       </div>
+     </div>
+
+    <div id="ConfirmMSGbyfloor" class="modal fade in modal-theme" role="dialog" data-backdrop="false" *ngIf="model_showbidcalculator">
+        <div class="modal-dialog" style="width:400px;">
+          <div class="modal-content">
+            <div class="modal-header">
+              <!--<div class="close-dismiss" data-dismiss="modal"></div>-->
+              <h4 class="modal-title"> </h4>
+            </div>
+
+            <div class="modal-body">
+              <div style="margin-bottom:2px;width:350px;">
+                <div id="theme-blue">
+                  <b *ngIf="!locatiomVM.showmsg">
+                    This will recalculate all the rooms in the floor based on the latest inputs.This can take some time.
+                    Are you sure you want to refresh the calculations?
+                  </b>
+                  <b *ngIf="locatiomVM.showmsg">
+                    Please wait while we rebuild the new calculations.
+                    Please do not refresh or leave this screen.
+                  </b>
+                </div>
+              </div>
+              <br />
+              <div class="modal-footer" *ngIf="!locatiomVM.showmsg">
+                <button type="button" class="btn btn-theme btn-sm" style="width:55px;" (click)="ConfirmMSGbyfloor()">Yes</button>&nbsp;&nbsp;
+                <button type="button" class="btn btn-theme  btn-sm" data-dismiss="modal" style="width:55px;">No</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    <div id="ConfirmMSGbyroom" class="modal fade in modal-theme" role="dialog" data-backdrop="false" *ngIf="model_showbidcalculator">
+        <div class="modal-dialog" style="width:400px;">
+          <div class="modal-content">
+            <div class="modal-header">
+              <!--<div class="close-dismiss" data-dismiss="modal"></div>-->
+              <h4 class="modal-title"> </h4>
+            </div>
+
+            <div class="modal-body">
+              <div style="margin-bottom:2px;width:350px;">
+                <div id="theme-blue">
+                  <b *ngIf="!locatiomVM.showmsg">
+                    This will recalculate the rooms in the floor based on the latest inputs.This can take some time.
+                    Are you sure you want to refresh the calculations?
+                  </b>
+                  <b *ngIf="locatiomVM.showmsg">
+                    Please wait while we rebuild the new calculations.
+                    Please do not refresh or leave this screen.
+                  </b>
+                </div>
+              </div>
+              <br />
+              <div class="modal-footer" *ngIf="!locatiomVM.showmsg">
+                <button type="button" class="btn btn-theme btn-sm" style="width:55px;" (click)="ConfirmMSGbyroom()">Yes</button>&nbsp;&nbsp;
+                <button type="button" class="btn btn-theme  btn-sm" data-dismiss="modal" style="width:55px;">No</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+</div>
+  </div>
